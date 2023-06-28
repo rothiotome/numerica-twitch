@@ -8,12 +8,11 @@ public class CounterTwitchGame : MonoBehaviour
     [SerializeField] private TextMeshProUGUI usernameTMP;
     [SerializeField] private TextMeshProUGUI currentScoreTMP;
     [SerializeField] private TextMeshProUGUI maxScoreTMP;
-    
+
     private int currentScore;
     private int currentMaxScore;
 
     private string lastUsername = "";
-
     private readonly string maxScoreKey = "maxScore";
 
     private void Start()
@@ -22,7 +21,7 @@ public class CounterTwitchGame : MonoBehaviour
         TwitchController.onTwitchMessageReceived += OnTwitchMessageReceived;
 
         currentMaxScore = PlayerPrefs.GetInt(maxScoreKey);
-        maxScoreTMP.SetText($"Max Score: {currentMaxScore}");
+        maxScoreTMP.SetText($"HIGH SCORE: {currentMaxScore}");
         usernameTMP.SetText("");
         ResetGame();
     }
@@ -59,7 +58,7 @@ public class CounterTwitchGame : MonoBehaviour
                 if (currentScore > currentMaxScore)
                 {
                     currentMaxScore = currentScore;
-                    maxScoreTMP.SetText($"Max Score: {currentMaxScore}");
+                    maxScoreTMP.SetText($"HIGH SCORE: {currentMaxScore}");
                     PlayerPrefs.SetInt(maxScoreKey, currentScore);
                 }
             }
@@ -67,7 +66,7 @@ public class CounterTwitchGame : MonoBehaviour
             {
                 if (currentScore != 0)
                 {
-                    usernameTMP.SetText($"<color=red>Blame {username}</color>");
+                    usernameTMP.SetText($"<color=#00EAC0>Shame on </color>{username}<color=#00EAC0>!</color>");
                     GameLost();
                 }
 
