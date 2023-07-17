@@ -181,8 +181,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "<color=#FFE34F>\xBB</color> Timeout immunity to mods<size=60%>\\n                  
-    -  Mods wont receive timeout if they fail"
+  m_text: "<color=#FFE34F>\xBB</color> Timeout immunity to mods<size=60%>\\n             
+    <color=#FFE34F>     -  Mods wont receive timeout if they fail"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 7cd9337368586d74089447414d72a968, type: 2}
   m_sharedMaterial: {fileID: 7009212365913637915, guid: 7cd9337368586d74089447414d72a968, type: 2}
@@ -4324,7 +4324,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "<color=#FFE34F>\xBB</color> Timeout user on fail<size=60%>\\n                  
+  m_text: "<color=#FFE34F>\xBB</color> Timeout user on fail<size=60%>\\n  <color=#FFE34F>                
     -  Mods will lose the sword if they fail"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 7cd9337368586d74089447414d72a968, type: 2}
@@ -5429,8 +5429,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "<color=#FFE34F>\xBB</color> Grant temporary VIP to high score<size=60%>\\n                  
-    -  This wont affect existing VIPs"
+  m_text: "<color=#FFE34F>\xBB</color> Grant temporary VIP to high score<size=60%>\\n               
+    <color=#FFE34F>   -  This wont affect existing VIPs"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 7cd9337368586d74089447414d72a968, type: 2}
   m_sharedMaterial: {fileID: 7009212365913637915, guid: 7cd9337368586d74089447414d72a968, type: 2}
