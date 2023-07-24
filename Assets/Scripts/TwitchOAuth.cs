@@ -35,7 +35,7 @@ public class TwitchOAuth : MonoBehaviour
     private string _authToken = "";
     private string _refreshToken = "";
 
-    private bool oauthTokenRetreived;
+    private bool oauthTokenRetrieved;
 
     private string userId;
     private string channelName;
@@ -63,12 +63,13 @@ public class TwitchOAuth : MonoBehaviour
             Instance = this; 
         } 
     }
+    
     private void Update()
     {
-        if (!oauthTokenRetreived) return;
+        if (!oauthTokenRetrieved) return;
         
         TwitchController.Login(channelName, new TwitchLoginInfo(channelName, _authToken));
-        oauthTokenRetreived = false;
+        oauthTokenRetrieved = false;
         InvokeRepeating("ValidateToken", 3600, 3600);
     }
     
@@ -234,8 +235,8 @@ public class TwitchOAuth : MonoBehaviour
         _authToken = apiResponseData.access_token;
         _refreshToken = apiResponseData.refresh_token;
 
-        ValidateToken();
-        
+        await ValidateToken();
+        oauthTokenRetrieved = true;
     }
 
     private async Task ValidateToken()
@@ -251,8 +252,6 @@ public class TwitchOAuth : MonoBehaviour
 
         userId = apiResponseData.user_id;
         channelName = apiResponseData.login;
-
-        oauthTokenRetreived = true;
     }
 
     private async Task RefreshToken()
@@ -380,6 +379,4 @@ public class TwitchOAuth : MonoBehaviour
         httpListener?.Stop();
         httpListener?.Abort();
     }
-
-
 }
