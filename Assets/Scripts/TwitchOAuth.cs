@@ -25,8 +25,8 @@ using UnityEngine.Networking;
 public class TwitchOAuth : MonoBehaviour
 {
     private readonly string twitchValidateUrl = "https://id.twitch.tv/oauth2/validate";
-    private readonly string twitchBanUrl = "https://api.twitch.tv/helix/moderation/bans";
     private readonly string twitchRefreshTokenUrl = "https://id.twitch.tv/oauth2/token";
+    private readonly string twitchBanUrl = "https://api.twitch.tv/helix/moderation/bans";
     private readonly string twitchAuthUrl = "https://id.twitch.tv/oauth2/authorize";
     private readonly string twitchVipUrl = "https://api.twitch.tv/helix/channels/vips";
 
@@ -70,6 +70,7 @@ public class TwitchOAuth : MonoBehaviour
         
         TwitchController.Login(channelName, new TwitchLoginInfo(channelName, _authToken));
         oauthTokenRetrieved = false;
+        
         InvokeRepeating("ValidateToken", 3600, 3600);
     }
     
@@ -304,7 +305,6 @@ public class TwitchOAuth : MonoBehaviour
     private async Task timeout(string targetUserId, int failedNumber)
     {
         string apiUrl;
-        string apiResponseJson;
 
         apiUrl = twitchBanUrl +
                  "?broadcaster_id=" + userId +
@@ -312,16 +312,14 @@ public class TwitchOAuth : MonoBehaviour
         
         string body = $"{{\"data\": {{\"user_id\":\"{targetUserId}\",\"duration\":{failedNumber*timeoutMultiplier}}}}}";
 
-        apiResponseJson = await CallApi(apiUrl, "POST", body);
-        if(apiResponseJson.Contains("401"))
-        {
-            await RefreshToken();
-            Timeout(targetUserId, failedNumber);
-        }
+        await CallApi(apiUrl, "POST", body);
     }
 
     private async Task<string> CallApi(string endpoint, string method = "GET", string body = "", string[] headers = null)
     {
+
+        int retries = 0;
+        
         _httpClient.BaseAddress = null;
         _httpClient.DefaultRequestHeaders.Clear();
 
@@ -358,20 +356,36 @@ public class TwitchOAuth : MonoBehaviour
             }
         }
 
-        HttpResponseMessage httpResponse;
-        try
+        while (retries < 3)
         {
-            httpResponse = await _httpClient.SendAsync(httpRequest).ConfigureAwait(false);
-            httpResponse.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException ex)
-        {
-            // Handle exception or rethrow, depending on your requirement
-            throw;
+            Tuple<HttpStatusCode, string> response = await HttpCall(httpRequest);
+
+            switch (response.Item1)
+            {
+                case HttpStatusCode.OK: 
+                    return response.Item2;
+                case HttpStatusCode.Unauthorized:
+                    await RefreshToken();
+                    break;
+                default:
+                    break;
+            }
+
+            retries++;
         }
 
+        return string.Empty;
+    }
+
+    private async Task<Tuple<HttpStatusCode, string>> HttpCall(HttpRequestMessage httpRequest)
+    {
+        HttpResponseMessage httpResponse = null;
+        
+        httpResponse = await _httpClient.SendAsync(httpRequest).ConfigureAwait(false);
+        httpResponse.EnsureSuccessStatusCode();
+
         string httpResponseContent = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
-        return httpResponseContent;
+        return new Tuple<HttpStatusCode, string>(httpResponse.StatusCode, httpResponseContent);
     }
 
     private void OnApplicationQuit()

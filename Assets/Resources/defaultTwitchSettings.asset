@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   secondsToRetry: 5
   maxRetry: 10
-  debugMode: 1
+  debugMode: 0
   preserveAcrossScenes: 1
   useAnonymousConnection: 0
   username: 
