@@ -23,13 +23,15 @@ The game is available for free on itch.io ->
 ## Featuring "Very Simple Twitch Chat" Unity Plugin
 This game was entirely developed on [Twitch](https://twitch.tv/RothioTome) as an example of how to use the [Very Simple Twitch Chat Plugin](https://github.com/rothiotome/very-simple-twitch-chat)
 
-![Very Simple Twitch Chat](./GitHub/vstc-screenshot.png)
+![Very Simple Twitch Chat](./.github/vstc-screenshot.png)
 
 ## FAQ
-### Secrets.CLIENT_ID and Secrets.CLIENT_SECRET can't be found
+### Secrets.cs can't be found
 When you create a Twitch App on the [Twitch Developer Dashboard](https://dev.twitch.tv/), you get a CLIENT ID (this key is public) and CLIENT SECRET (this key must be private) and need to add them to the header in all your Twitch API Calls.
 
 For obvious reasons, I can't add the original numerica Id and Secret keys to the repository, you need to generate your own ones and add them to the code in order to use the VIP/Timeout functionality.
+
+To help you with this task, I've created a Secrets template where you can add your Client data. To add the saved file to your project, you can duplicate the file stored in ``Assets\Secrets\Secrets.cs.example`` and remove the extra extension of this file. This will result in a ``Secrets.cs`` file that will be recognized by the engine but won't be tracked by git.
 
 To generate your own keys:
 
@@ -39,15 +41,15 @@ To generate your own keys:
 
 3. Register your application. Make sure you add the localhost URL to the redirect field
 
-![register-your-app](./GitHub/register-your-app.png)
+![register-your-app](./.github/register-your-app.png)
 
 4. Click on the "Manage" button.
 
-![get-client-secret](./GitHub/get-client-secret.png)
+![get-client-secret](./.github/get-client-secret.png)
 
 5. Click on the "New Secret" button
 
-6. Copy the generated "Client ID" and "Client Secret" and add them to your project :D
+6. Copy the generated "Client ID" and "Client Secret" and add them to your ``Secrets.cs`` file.
 
 ### I love Numerca, can I contribute to the project?
 Sure thing! I'd love to see Numerica grow and become a better game. I am open to receiving Pull Requests with new or improved functionality. However, I want to keep the project simple so I'd advise you to contact me before starting development.
@@ -56,12 +58,15 @@ That said, Numerica uses the GPLv3 license, so feel free to fork the project and
 
 If you are not a programmer and want to support my work, feel free to make donate me on [itch.io](https://rothiotome.itch.io/numerica), subscribe to my [Twitch channel](https://twitch.tv/RothioTome) or buy me a [ko-fi](https://ko-fi.com/rothiotome).
 
-## Games based on Numerica
+## Numerica clones with different frameworks and engines
 Some cool developers have  created their own versions of numerica. Here is a list featuring them!
 - Metalito web version
   - Developed using React, Typescript and TailwindCSS
-  - [Github](https://github.com/JavierBalonga/numerica-game)
+  - [GitHub](https://github.com/JavierBalonga/numerica-game)
   - [Running version](https://javierbalonga.github.io/numerica-game/)
+- Seyacat godot version
+  - Developed using Godot
+  - [GitHub](https://github.com/seyacat/numerica-twitch-godot)
 
 ## Thanks
 This game has been developed thanks to a loving community of people that support me every day on Twitch. This wouldn't be possible without all of you <3
