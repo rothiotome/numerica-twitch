@@ -18,8 +18,8 @@ public class TwitchOAuth : MonoBehaviour
     private readonly string twitchVipUrl = "https://api.twitch.tv/helix/channels/vips";
 
     private readonly string twitchRedirectUrl = "http://localhost:8080/";
-    private readonly string loginSuccessUrl = "https://rociotome.com/success-login";
-    private readonly string loginFailUrl = "https://rociotome.com/fail-login";
+    private readonly string loginSuccessUrl = "https://rociotome.com/success-numerica-login";
+    private readonly string loginFailUrl = "https://rociotome.com/fail-numerica-login";
     
     private string twitchAuthStateVerify;
     private string authToken = "";
