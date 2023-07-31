@@ -1,18 +1,6 @@
-﻿/*
- * Simple Twitch OAuth flow example
- * by HELLCAT
- *
- * At first glance, this looks like more than it actually is.
- * It's really no rocket science, promised! ;-)
- * And for any further questions contact me directly or on the Twitch-Developers discord.
- *
- * 🐦 https://twitter.com/therealhellcat
- * 📺 https://www.twitch.tv/therealhellcat
- * 
- * Heavily modified by twitch.tv/RothioTome ✌️
- */
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -25,32 +13,32 @@ using UnityEngine.Networking;
 public class TwitchOAuth : MonoBehaviour
 {
     private readonly string twitchValidateUrl = "https://id.twitch.tv/oauth2/validate";
-    private readonly string twitchRefreshTokenUrl = "https://id.twitch.tv/oauth2/token";
     private readonly string twitchBanUrl = "https://api.twitch.tv/helix/moderation/bans";
     private readonly string twitchAuthUrl = "https://id.twitch.tv/oauth2/authorize";
     private readonly string twitchVipUrl = "https://api.twitch.tv/helix/channels/vips";
 
-    private string twitchRedirectUrl = "http://localhost:8080/";
-    private string _twitchAuthStateVerify;
-    private string _authToken = "";
-    private string _refreshToken = "";
+    private readonly string twitchRedirectUrl = "http://localhost:8080/";
+    private readonly string loginSuccessUrl = "https://rociotome.com/success-login";
+    private readonly string loginFailUrl = "https://rociotome.com/fail-login";
+    
+    private string twitchAuthStateVerify;
+    private string authToken = "";
 
     private bool oauthTokenRetrieved;
 
     private string userId;
     private string channelName;
     
-    private HttpClient _httpClient = new HttpClient();
-
+    private HttpClient httpClient = new HttpClient();
+    private HttpListener httpListener;
+    
     private bool enableTimeout = true;
     private bool enableVip = true;
     private bool enableModImmunity = false;
     private int timeoutMultiplier = 10;
 
-    private HttpListener httpListener;
-    
+    #region Singleton
     public static TwitchOAuth Instance { get; private set; }
-
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.
@@ -64,14 +52,15 @@ public class TwitchOAuth : MonoBehaviour
         } 
     }
     
+    #endregion
+
     private void Update()
     {
         if (!oauthTokenRetrieved) return;
         
-        TwitchController.Login(channelName, new TwitchLoginInfo(channelName, _authToken));
+        TwitchController.Login(channelName, new TwitchLoginInfo(channelName, authToken));
         oauthTokenRetrieved = false;
-        
-        InvokeRepeating("ValidateToken", 3600, 3600);
+        InvokeRepeating(nameof(ValidateToken), 3600, 3600);
     }
     
     public void SetTimeoutOption(bool state)
@@ -105,6 +94,19 @@ public class TwitchOAuth : MonoBehaviour
         if (timeoutMultiplier < 1) timeoutMultiplier = 10;
     }
 
+    public bool Timeout(string targetUserId, int failedNumber)
+    {
+        if (enableTimeout) timeout(targetUserId, failedNumber);
+        
+        return enableTimeout;
+    }
+
+    public bool SetVIP(string targetUserId, bool state)
+    {
+        if (enableVip) setVIP(targetUserId, state);
+        return enableVip;
+    }
+    
     /// <summary>
     /// Starts the Twitch OAuth flow by constructing the Twitch auth URL based on the scopes you want/need.
     /// </summary>
@@ -125,13 +127,13 @@ public class TwitchOAuth : MonoBehaviour
         // generate something for the "state" parameter.
         // this can be whatever you want it to be, it's gonna be "echoed back" to us as is and should be used to
         // verify the redirect back from Twitch is valid.
-        _twitchAuthStateVerify = ((Int64)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds).ToString();
+        twitchAuthStateVerify = ((Int64)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds).ToString();
 
         // query parameters for the Twitch auth URL
         var s = "client_id=" + Secrets.CLIENT_ID + "&" +
                 "redirect_uri=" + UnityWebRequest.EscapeURL(twitchRedirectUrl) + "&" +
-                "state=" + _twitchAuthStateVerify + "&" +
-                "response_type=code&" +
+                "state=" + twitchAuthStateVerify + "&" +
+                "response_type=token" + "&" +
                 "scope=" + String.Join("+", scopes);
 
         // start our local webserver to receive the redirect back after Twitch authenticated
@@ -160,155 +162,89 @@ public class TwitchOAuth : MonoBehaviour
     /// <param name="result"></param>
     private void IncomingHttpRequest(IAsyncResult result)
     {
-        string code;
-        string state;
-
-        HttpListenerContext httpContext;
-        HttpListenerRequest httpRequest;
-        HttpListenerResponse httpResponse;
-        string responseString;
-
-        // get back the reference to our http listener
-        // HttpListener httpListener = (HttpListener)result.AsyncState;
-
         // fetch the context object
-        httpContext = httpListener.EndGetContext(result);
-
-        // if we'd like the HTTP listener to accept more incoming requests, we'd just restart the "get context" here:
-        // httpListener.BeginGetContext(new AsyncCallback(IncomingHttpRequest),httpListener);
-        // however, since we only want/expect the one, single auth redirect, we don't need/want this, now.
-        // but this is what you would do if you'd want to implement more (simple) "webserver" functionality
-        // in your project.
+        HttpListenerContext httpContext = httpListener.EndGetContext(result);
 
         // the context object has the request object for us, that holds details about the incoming request
-        httpRequest = httpContext.Request;
+        HttpListenerRequest httpRequest = httpContext.Request;
 
-        code = httpRequest.QueryString.Get("code");
-        state = httpRequest.QueryString.Get("state");
+        string[] tokens = httpRequest.QueryString.AllKeys;
 
-        // check that we got a code value and the state value matches our remembered one
-        if ((code.Length > 0) && (state == _twitchAuthStateVerify))
+        if (tokens.Contains("access_token"))
         {
-            // if all checks out, use the code to exchange it for the actual auth token at the API
-            GetTokenFromCode(code);
+            authToken = httpRequest.QueryString.Get("access_token");
+            string state = httpRequest.QueryString.Get("state");
+
+            if (state == twitchAuthStateVerify)
+            {
+                string responseString = $"<html><body><script>window.location.replace(\"{loginSuccessUrl}\");</script></body></html>";
+                ValidateToken(true);
+                SendResponse(httpContext, responseString);
+
+                httpListener.Stop();
+            }
+            else
+            {
+                string responseString = $"<html><body><script>window.location.replace(\"{loginFailUrl}\");</script></body></html>";
+                SendResponse(httpContext, responseString);
+            
+                httpListener.Stop();
+            }
+        }else if (tokens.Contains("error"))
+        {
+            string responseString = $"<html><body><script>window.location.replace(\"{loginFailUrl}\");</script></body></html>";
+            SendResponse(httpContext, responseString);
+            
+            httpListener.Stop();
         }
+        else
+        {
+            string responseString = "<html><head><meta http-equiv='cache-control' content='no-cache'><meta http-equiv='expires' content='0'> <meta http-equiv='pragma' content='no-cache'></head><body><script>var link = window.location.toString(); link = link.replace('#','?'); window.location.replace(link);</script></body></html>";
+            SendResponse(httpContext, responseString);
+            httpListener.BeginGetContext(IncomingHttpRequest, httpListener);
+        }
+    }
+
+    private void SendResponse(HttpListenerContext httpContext, string responseString)
+    {
+        HttpListenerResponse httpResponse = httpContext.Response;
 
         // build a response to send an "ok" back to the browser for the user to see
         httpResponse = httpContext.Response;
-        responseString = "<html><body><b>DONE!</b><br>(You can close this tab/window now)</body></html>";
-        byte[] buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
+        byte[] buffer = Encoding.UTF8.GetBytes(responseString);
 
         // send the output to the client browser
         httpResponse.ContentLength64 = buffer.Length;
         System.IO.Stream output = httpResponse.OutputStream;
         output.Write(buffer, 0, buffer.Length);
         output.Close();
-
-        // the HTTP listener has served it's purpose, shut it down
-        httpListener.Stop();
     }
 
-    /// <summary>
-    /// Makes the API call to exchange the received code for the actual auth token
-    /// </summary>
-    /// <param name="code">The code parameter received in the callback HTTP request</param>
-    private async Task GetTokenFromCode(string code)
+    private async Task ValidateToken(bool shouldConnectChat = false)
     {
-        string apiUrl;
-        string apiResponseJson;
-        ApiCodeTokenResponse apiResponseData;
-
-        // construct full URL for API call
-        apiUrl = twitchRefreshTokenUrl +
-                 "?client_id=" + Secrets.CLIENT_ID +
-                 "&client_secret=" + Secrets.CLIENT_SECRET +
-                 "&code=" + code +
-                 "&grant_type=authorization_code" +
-                 "&redirect_uri=" + UnityWebRequest.EscapeURL(twitchRedirectUrl);
-
-        // make the call!
-        apiResponseJson = await CallApi(apiUrl, "POST");
-
-        // parse the return JSON into a more usable data object
-        apiResponseData = JsonUtility.FromJson<ApiCodeTokenResponse>(apiResponseJson);
-
-        // fetch the token from the response data
-        _authToken = apiResponseData.access_token;
-        _refreshToken = apiResponseData.refresh_token;
-
-        await ValidateToken();
-        oauthTokenRetrieved = true;
-    }
-
-    private async Task ValidateToken()
-    {
-        string apiUrl;
-        string apiResponseJson;
-        apiUrl = twitchValidateUrl;
-        ApiValidateResponse apiResponseData;
-
-        apiResponseJson = await CallApi(apiUrl, "GET");
-
-        apiResponseData = JsonUtility.FromJson<ApiValidateResponse>(apiResponseJson);
+        string apiResponseJson = await CallApi(twitchValidateUrl);
+        ApiValidateResponse apiResponseData = JsonUtility.FromJson<ApiValidateResponse>(apiResponseJson);
 
         userId = apiResponseData.user_id;
         channelName = apiResponseData.login;
-    }
-
-    private async Task RefreshToken()
-    {
-        string apiUrl;
-        string apiResponseJson;
-        ApiCodeTokenResponse apiResponseData;
-
-        // construct full URL for API call
-        apiUrl = twitchRefreshTokenUrl +
-                 "?client_id=" + Secrets.CLIENT_ID +
-                 "&client_secret=" + Secrets.CLIENT_SECRET +
-                 "&grant_type=refresh_token" +
-                 "&refresh_token=" + UnityWebRequest.EscapeURL(_refreshToken);
         
-        // make the call!
-        apiResponseJson = await CallApi(apiUrl, "POST");
-
-        // parse the return JSON into a more usable data object
-        apiResponseData = JsonUtility.FromJson<ApiCodeTokenResponse>(apiResponseJson);
-
-        // fetch the token from the response data
-        _authToken = apiResponseData.access_token;
-        _refreshToken = apiResponseData.refresh_token;
+        if(shouldConnectChat) oauthTokenRetrieved = true;
     }
     
-    public bool Timeout(string targetUserId, int failedNumber)
-    {
-        if (enableTimeout) timeout(targetUserId, failedNumber);
-        
-        return enableTimeout;
-    }
-
-    public bool SetVIP(string targetUserId, bool state)
-    {
-        if (enableVip) setVIP(targetUserId, state);
-        return enableVip;
-    }
-
     private async Task setVIP(string targetUserId, bool state)
     {
-        string apiUrl;
-        apiUrl = twitchVipUrl +
-                 "?user_id=" + targetUserId +
-                 "&broadcaster_id=" + userId;
+        string apiUrl = twitchVipUrl +
+                        "?user_id=" + targetUserId +
+                        "&broadcaster_id=" + userId;
 
         await CallApi(apiUrl, state ? "POST" : "DELETE");
     }
     
     private async Task timeout(string targetUserId, int failedNumber)
     {
-        string apiUrl;
-
-        apiUrl = twitchBanUrl +
-                 "?broadcaster_id=" + userId +
-                 "&moderator_id=" + userId;
+        string apiUrl = twitchBanUrl +
+                        "?broadcaster_id=" + userId +
+                        "&moderator_id=" + userId;
         
         string body = $"{{\"data\": {{\"user_id\":\"{targetUserId}\",\"duration\":{failedNumber*timeoutMultiplier}}}}}";
 
@@ -320,8 +256,8 @@ public class TwitchOAuth : MonoBehaviour
 
         int retries = 0;
         
-        _httpClient.BaseAddress = null;
-        _httpClient.DefaultRequestHeaders.Clear();
+        httpClient.BaseAddress = null;
+        httpClient.DefaultRequestHeaders.Clear();
 
         HttpMethod httpMethod = new HttpMethod(method.ToUpperInvariant());
         HttpRequestMessage httpRequest = new HttpRequestMessage(httpMethod, endpoint);
@@ -331,9 +267,9 @@ public class TwitchOAuth : MonoBehaviour
             httpRequest.Content = new StringContent(body, Encoding.UTF8, "application/json");
         }
 
-        if (!string.IsNullOrEmpty(_authToken))
+        if (!string.IsNullOrEmpty(authToken))
         {
-            httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _authToken);
+            httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authToken);
         }
 
         if (!string.IsNullOrEmpty(Secrets.CLIENT_ID))
@@ -365,7 +301,7 @@ public class TwitchOAuth : MonoBehaviour
                 case HttpStatusCode.OK: 
                     return response.Item2;
                 case HttpStatusCode.Unauthorized:
-                    await RefreshToken();
+                    Debug.Log("Unauthorized");
                     break;
                 default:
                     break;
@@ -379,9 +315,7 @@ public class TwitchOAuth : MonoBehaviour
 
     private async Task<Tuple<HttpStatusCode, string>> HttpCall(HttpRequestMessage httpRequest)
     {
-        HttpResponseMessage httpResponse = null;
-        
-        httpResponse = await _httpClient.SendAsync(httpRequest).ConfigureAwait(false);
+        HttpResponseMessage httpResponse = await httpClient.SendAsync(httpRequest).ConfigureAwait(false);
         httpResponse.EnsureSuccessStatusCode();
 
         string httpResponseContent = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
