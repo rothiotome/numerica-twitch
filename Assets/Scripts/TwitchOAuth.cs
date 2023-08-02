@@ -37,6 +37,16 @@ public class TwitchOAuth : MonoBehaviour
     private bool enableModImmunity = false;
     private int timeoutMultiplier = 10;
 
+    // delegates
+    public delegate void OnAuthFailed();
+
+    public static OnAuthFailed onAuthFailed;
+    
+    // delegates
+    public delegate void OnAuthSuccess();
+
+    public static OnAuthSuccess onAuthSuccess;
+    
     #region Singleton
     public static TwitchOAuth Instance { get; private set; }
     private void Awake()
@@ -180,21 +190,21 @@ public class TwitchOAuth : MonoBehaviour
                 string responseString = $"<html><body><script>window.location.replace(\"{loginSuccessUrl}\");</script></body></html>";
                 ValidateToken(true);
                 SendResponse(httpContext, responseString);
-
+                onAuthSuccess?.Invoke();
                 httpListener.Stop();
             }
             else
             {
                 string responseString = $"<html><body><script>window.location.replace(\"{loginFailUrl}\");</script></body></html>";
                 SendResponse(httpContext, responseString);
-            
+                onAuthFailed?.Invoke();
                 httpListener.Stop();
             }
         }else if (tokens.Contains("error"))
         {
             string responseString = $"<html><body><script>window.location.replace(\"{loginFailUrl}\");</script></body></html>";
             SendResponse(httpContext, responseString);
-            
+            onAuthFailed?.Invoke();
             httpListener.Stop();
         }
         else

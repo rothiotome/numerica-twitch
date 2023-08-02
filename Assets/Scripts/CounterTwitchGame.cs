@@ -1,6 +1,7 @@
 using TMPro;
 using TwitchChat;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class CounterTwitchGame : MonoBehaviour
 {
@@ -25,12 +26,20 @@ public class CounterTwitchGame : MonoBehaviour
 
     [SerializeField] private GameObject startingCanvas;
 
+    [SerializeField] private UnityEvent OnAuthSuccessEvents;
+    [SerializeField] private UnityEvent OnAuthFailedEvents;
+    
+    private bool OAuthFailed = false;
+    private bool OAuthSuccess = false;
+    
     private void Start()
     {
         Application.targetFrameRate = 30;
 
         TwitchController.onTwitchMessageReceived += OnTwitchMessageReceived;
         TwitchController.onChannelJoined += OnChannelJoined;
+        TwitchOAuth.onAuthFailed += OnAuthFailed;
+        TwitchOAuth.onAuthSuccess += OnAuthSuccess;
 
         currentMaxScore = PlayerPrefs.GetInt(maxScoreKey);
         currentMaxScoreUsername = PlayerPrefs.GetString(maxScoreUsernameKey, currentMaxScoreUsername);
@@ -45,6 +54,8 @@ public class CounterTwitchGame : MonoBehaviour
     {
         TwitchController.onTwitchMessageReceived -= OnTwitchMessageReceived;
         TwitchController.onChannelJoined -= OnChannelJoined;
+        TwitchOAuth.onAuthFailed -= OnAuthFailed;
+        TwitchOAuth.onAuthSuccess -= OnAuthSuccess;
     }
 
     private void OnTwitchMessageReceived(Chatter chatter)
@@ -218,5 +229,30 @@ public class CounterTwitchGame : MonoBehaviour
         lastUsername = "";
         currentScore = 0;
         currentScoreTMP.SetText(currentScore.ToString());
+    }
+
+    private void Update()
+    {
+        if (OAuthFailed)
+        {
+            OnAuthFailedEvents?.Invoke();
+            OAuthFailed = false;
+        }
+        
+        if (OAuthSuccess)
+        {
+            OnAuthSuccessEvents?.Invoke();
+            OAuthSuccess = false;
+        }
+    }
+
+    private void OnAuthFailed()
+    {
+        OAuthFailed = true;
+    }
+    
+    private void OnAuthSuccess()
+    {
+        OAuthSuccess = true;
     }
 }
