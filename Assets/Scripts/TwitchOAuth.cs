@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
 using TwitchChat;
@@ -16,8 +17,14 @@ public class TwitchOAuth : MonoBehaviour
     private readonly string twitchBanUrl = "https://api.twitch.tv/helix/moderation/bans";
     private readonly string twitchAuthUrl = "https://id.twitch.tv/oauth2/authorize";
     private readonly string twitchVipUrl = "https://api.twitch.tv/helix/channels/vips";
+    private readonly string twitchSettingsUrl = "https://api.twitch.tv/helix/chat/settings";
 
-    private readonly string twitchRedirectUrl = "http://localhost:8080/";
+    private readonly string twitchRedirectHost = "http://localhost:";
+    private int twitchFreePort;
+
+    private readonly string uselessUUID =
+        "/53125396-3e32-4fad-8f7e-36475724168b-a8fe83ab-3373-4a6a-8967-2532eafe407f-41483db3-f011-4a23-80da-9a340672692a-e755c6d4-c546-43ce-b722-b5a799561b4e-5ba1697d-79b2-4d5d-96c3-f0d91f13f583-f08f18f9-bd56-4a0f-a597-96f90108cd85-14449d50-6cc9-450f-8119-ff4c525e31db-e41a6912-92a0-48b6-b6d3-845c21bea7eb-7dfd7948-2976-42cf-9cca-b23ae5854813-107224eb-81ea-46dd-9bf5-9ebbfcfc45dc/";
+
     private readonly string loginSuccessUrl = "https://rociotome.com/success-numerica-login";
     private readonly string loginFailUrl = "https://rociotome.com/fail-numerica-login";
     
@@ -36,6 +43,15 @@ public class TwitchOAuth : MonoBehaviour
     private bool enableVip = true;
     private bool enableModImmunity = false;
     private int timeoutMultiplier = 10;
+    
+    private int freePort;
+
+    private int[] portList = new[]
+    {
+        12345,
+        1234,
+        12346
+    };
 
     #region Singleton
     public static TwitchOAuth Instance { get; private set; }
@@ -59,6 +75,7 @@ public class TwitchOAuth : MonoBehaviour
         if (!oauthTokenRetrieved) return;
         
         TwitchController.Login(channelName, new TwitchLoginInfo(channelName, authToken));
+        UpdateTwitchSettings();
         oauthTokenRetrieved = false;
         InvokeRepeating(nameof(ValidateToken), 3600, 3600);
     }
@@ -112,7 +129,7 @@ public class TwitchOAuth : MonoBehaviour
     /// </summary>
     public void InitiateTwitchAuth()
     {
-        List<string> scopes = new List<string>{"chat:read"};
+        List<string> scopes = new List<string>{"chat:read+moderator:manage:chat_settings"};
         
         if (enableTimeout)
         {
@@ -123,15 +140,20 @@ public class TwitchOAuth : MonoBehaviour
         {
             scopes.Add("channel:manage:vips");
         }
-
+        
+        if (!CheckAvailablePort())
+        {
+            Application.OpenURL(loginFailUrl);
+            return;
+        }
+        
         // generate something for the "state" parameter.
         // this can be whatever you want it to be, it's gonna be "echoed back" to us as is and should be used to
         // verify the redirect back from Twitch is valid.
         twitchAuthStateVerify = ((Int64)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds).ToString();
 
-        // query parameters for the Twitch auth URL
         var s = "client_id=" + Secrets.CLIENT_ID + "&" +
-                "redirect_uri=" + UnityWebRequest.EscapeURL(twitchRedirectUrl) + "&" +
+                "redirect_uri=" + UnityWebRequest.EscapeURL(twitchRedirectHost+freePort+uselessUUID) + "&" +
                 "state=" + twitchAuthStateVerify + "&" +
                 "response_type=token" + "&" +
                 "scope=" + String.Join("+", scopes);
@@ -151,7 +173,7 @@ public class TwitchOAuth : MonoBehaviour
     {
         httpListener = new HttpListener();
 
-        httpListener.Prefixes.Add(twitchRedirectUrl);
+        httpListener.Prefixes.Add(twitchRedirectHost+freePort+uselessUUID);
         httpListener.Start();
         httpListener.BeginGetContext(IncomingHttpRequest, httpListener);
     }
@@ -229,6 +251,15 @@ public class TwitchOAuth : MonoBehaviour
         channelName = apiResponseData.login;
         
         if(shouldConnectChat) oauthTokenRetrieved = true;
+    }
+    
+    private async Task UpdateTwitchSettings()
+    {
+        string apiUrl = twitchSettingsUrl +
+                        "?broadcaster_id" + userId +
+                        "&moderator_id" + userId;
+        string body = $"{{\"data\": {{\"non_moderator_chat_delay\":false,\"unique_chat_mode\":false}}}}";
+        await CallApi(apiUrl, "PATCH", body);
     }
     
     private async Task setVIP(string targetUserId, bool state)
@@ -322,6 +353,28 @@ public class TwitchOAuth : MonoBehaviour
         return new Tuple<HttpStatusCode, string>(httpResponse.StatusCode, httpResponseContent);
     }
 
+    private bool CheckAvailablePort()
+    {
+
+        // Evaluate current system tcp connections. This is the same information provided
+        // by the netstat command line application, just in .Net strongly-typed object
+        // form.  We will look through the list, and if our port we would like to use
+        // in our TcpClient is occupied, we will set isAvailable to false.
+
+        IPGlobalProperties ipGlobalProperties = IPGlobalProperties.GetIPGlobalProperties();
+        TcpConnectionInformation[] tcpConnInfoArray = ipGlobalProperties.GetActiveTcpConnections();
+        
+        foreach (int port in portList)
+        {
+            if (tcpConnInfoArray.All(x => x.LocalEndPoint.Port != port))
+            {
+                freePort = port;
+                return true;
+            }
+        }
+        return false;
+    }
+    
     private void OnApplicationQuit()
     {
         httpListener?.Stop();
