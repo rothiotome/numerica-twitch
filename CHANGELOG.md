@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [1.5.1] - 2023-08-18
+
+### Added
+- Editor extension to customize TwitchOauth and make it easier to get ready
+- Added TwitchAPI namespace
+
+### Changed
+- Login success and fail messages customizable from inspector
+- Token obfuscation through useless UUID is now optional but encouraged
+
+### Removed
+- Secrets folder is no longer necessary
+
 ## [1.5.0] - 2023-08-08
 
 ### Added

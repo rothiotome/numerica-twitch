@@ -4740,6 +4740,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1547828aee21f4c419ff8c2433ffb038, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  useUUUID: 1
+  loginSuccessMessage: <b>Done!</b><br>You can close this window now!.
+  loginFailMessage: <b>Oops!</b><br>Something bad happened. Please restart de game
+    and try again.
+  clientId: YOUR_CLIENT_ID_HERE
+  portList: 39300000d20400003a300000
 --- !u!4 &1634069027
 Transform:
   m_ObjectHideFlags: 0

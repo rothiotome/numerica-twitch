@@ -1,4 +1,5 @@
 using TMPro;
+using TwitchAPI;
 using TwitchChat;
 using UnityEngine;
 

@@ -11,3 +11,9 @@ Component Name: Unity3D - Twitch OAuth Example
 License Type: "Git not specified"
 
 [TheHellCat Project](https://github.com/TheHellcat/Unity-Twitch-OAuth-Example/)
+
+Component Name: Very Simple Twitch API
+
+License Type: "MIT"
+
+[Very Simple Twitch API](https://github.com/RothioTome/very-simple-twitch-api/)

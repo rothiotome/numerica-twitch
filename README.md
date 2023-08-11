@@ -19,36 +19,44 @@ The game is available for free on itch.io ->
 - Available platforms
     - Linux
     - Windows
+    - Mac comming soon!
 
 ## Featuring "Very Simple Twitch Chat" Unity Plugin
 This game was entirely developed on [Twitch](https://twitch.tv/RothioTome) as an example of how to use the [Very Simple Twitch Chat Plugin](https://github.com/rothiotome/very-simple-twitch-chat)
 
 ![Very Simple Twitch Chat](./.github/vstc-screenshot.png)
 
+## How to setup
+
+In order to run your very own Numerica, you will need to setup a new App in the Twitch developer console and perform the following steps:
+
+1. Go to https://dev.twitch.tv/console/apps and authorize Twitch Developer to access your account.
+
+2. Click on the "Register Your Application" button.
+
+3. Name your application and set the Category to ``Game Integration`` and the OAuth Redirect URL to ``http:/localhost`` for now.
+
+![twitch-dev-console-create-app](./.github/twitch-dev-console-create-app.png)
+
+4. Click on "Create".
+
+5. Find your application in the list and Click on "Manage".
+
+6. Open the Unity Project and go to the game scene in the "Scenes" folder. Find a GameObject named "Twitch OAuth" and select it.
+
+![twitch-oauth-editor](./.github/twitch-oauth-editor.png)
+
+7. Copy the Redirect URL addresses from the Twitch OAuth inspector to your Twitch Developer App.
+
+![copy-url](./.github/copy-url.png)
+
+8. Copy the generated "Client ID" from your Twitch Developer App and add it to your TwitchOAuth gameobject
+
+![copy-client-id](./.github/copy-client-id.png)
+
+That would be all! Please keep in mind that you'll need to update the OAuth Redirect URLs if you decide to not hide the token using UUID or if you change the ports list.
+
 ## FAQ
-### Secrets.cs can't be found
-When you create a Twitch App on the [Twitch Developer Dashboard](https://dev.twitch.tv/), you get a CLIENT ID (this key is public) and you need to add it to the header in your Twitch API Calls.
-
-Although this CLIENT ID is public, I don't think sharing mine in a repository is a good idea because every app should have its very own CLIENT ID and add it to the code in order to use the VIP/Timeout functionality.
-
-To help you with this task, I've created a Secrets template where you can add your Client data. To add the saved file to your project, you can duplicate the file stored in ``Assets\Secrets\Secrets.cs.example`` and remove the extra extension of this file. This will result in a ``Secrets.cs`` file that will be recognized by the engine but won't be tracked by git.
-
-To generate your own keys:
-
-1.  Go to https://dev.twitch.tv/console/apps and authorize Twitch Developer to access your account.
-
-2.  Click on the "Register Your Application" button.
-
-3. Register your application. Make sure you add the localhost URL to the redirect field
-
-![register-your-app](./.github/register-your-app.png)
-
-4. Click on the "Manage" button.
-
-![get-client-secret](./.github/get-client-secret.png)
-
-6. Copy the generated "Client ID" and add it to your ``Secrets.cs`` file.
-
 ### I love Numerca, can I contribute to the project?
 Sure thing! I'd love to see Numerica grow and become a better game. I am open to receiving Pull Requests with new or improved functionality. However, I want to keep the project simple so I'd advise you to contact me before starting development.
 
@@ -68,6 +76,10 @@ Some cool developers have  created their own versions of numerica. Here is a lis
 - Niadecode Kotlin version
   - Developed using Android Jetpack Compose and Kotlin
   - [GitHub](https://github.com/NiadeCode/Numerica)
+- DannielTP web version
+  - Developed using NextJS
+  - [GitHub](https://github.com/DannielTp/numerica-twitch-game)
+  - [Running version](https://numerica.dannieltp.com)
 
 ## Thanks
 This game has been developed thanks to a loving community of people that support me every day on Twitch. This wouldn't be possible without all of you <3
