@@ -2,7 +2,7 @@ using System;
 using UnityEditor;
 using UnityEngine;
 
-namespace TwitchAPI
+namespace VerySimpleTwitchAPI
 {
     [CustomEditor(typeof(TwitchOAuth))]
     public class TwitchOAuthEditor : Editor

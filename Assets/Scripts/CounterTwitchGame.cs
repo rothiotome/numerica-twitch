@@ -1,14 +1,10 @@
-using TMPro;
-using TwitchAPI;
-using TwitchChat;
+using VerySimpleTwitchAPI;
+using VerySimpleTwitchChat;
 using UnityEngine;
 
 public class CounterTwitchGame : MonoBehaviour
 {
-    [SerializeField] private TextMeshProUGUI usernameTMP;
-    [SerializeField] private TextMeshProUGUI currentScoreTMP;
-    [SerializeField] private TextMeshProUGUI maxScoreTMP;
-
+    
     private int currentScore;
 
     private string lastUsername = string.Empty;
@@ -26,26 +22,42 @@ public class CounterTwitchGame : MonoBehaviour
 
     [SerializeField] private GameObject startingCanvas;
 
+    [SerializeField] private UIController uiController;
+
     private void Start()
     {
         Application.targetFrameRate = 30;
 
-        TwitchController.onTwitchMessageReceived += OnTwitchMessageReceived;
-        TwitchController.onChannelJoined += OnChannelJoined;
+        TwitchChat.onTwitchMessageReceived += OnTwitchMessageReceived;
+        TwitchChat.onChannelJoined += OnChannelJoined;
+        PaletteController.OnPaletteUpdated += OnPaletteUpdated;
 
         currentMaxScore = PlayerPrefs.GetInt(maxScoreKey);
         currentMaxScoreUsername = PlayerPrefs.GetString(maxScoreUsernameKey, currentMaxScoreUsername);
         lastUserIdVIPGranted = PlayerPrefs.GetString(lastUserIdVIPGrantedKey, string.Empty);
 
-        UpdateMaxScoreUI();
-        UpdateCurrentScoreUI(lastUsername, currentScore.ToString());
+        uiController.UpdateMaxScoreUI(currentMaxScore, currentMaxScoreUsername, CheckDisplayVip());
+        uiController.UpdateCurrentScoreUI(currentScore, " ");
         ResetGame();
+    }
+
+    private bool CheckDisplayVip()
+    {
+        return (TwitchOAuth.Instance.IsVipEnabled() &&
+                (!string.IsNullOrEmpty(nextPotentialVIP) || !string.IsNullOrEmpty(lastUserIdVIPGranted)));
     }
 
     private void OnDestroy()
     {
-        TwitchController.onTwitchMessageReceived -= OnTwitchMessageReceived;
-        TwitchController.onChannelJoined -= OnChannelJoined;
+        TwitchChat.onTwitchMessageReceived -= OnTwitchMessageReceived;
+        TwitchChat.onChannelJoined -= OnChannelJoined;
+        PaletteController.OnPaletteUpdated -= OnPaletteUpdated;
+    }
+
+    private void OnPaletteUpdated()
+    {
+        uiController.UpdateCurrentScoreUI(currentScore, lastUsername);
+        uiController.UpdateMaxScoreUI(currentMaxScore, currentMaxScoreUsername, CheckDisplayVip());
     }
 
     private void OnTwitchMessageReceived(Chatter chatter)
@@ -63,7 +75,7 @@ public class CounterTwitchGame : MonoBehaviour
     private void HandleCorrectResponse(string displayName, Chatter chatter)
     {
         currentScore++;
-        UpdateCurrentScoreUI(displayName, currentScore.ToString());
+        uiController.UpdateCurrentScoreUI(currentScore, displayName);
 
         lastUsername = displayName;
         if (currentScore > currentMaxScore)
@@ -77,7 +89,7 @@ public class CounterTwitchGame : MonoBehaviour
     {
         if (currentScore != 0)
         {
-            DisplayShameMessage(displayName);
+            uiController.DisplayShameMessage(displayName);
 
             if (TwitchOAuth.Instance.IsVipEnabled())
             {
@@ -90,7 +102,7 @@ public class CounterTwitchGame : MonoBehaviour
             }
 
             HandleTimeout(chatter);
-            UpdateMaxScoreUI();
+            uiController.UpdateMaxScoreUI(currentMaxScore, currentMaxScoreUsername, CheckDisplayVip());
             ResetGame();
         }
     }
@@ -164,12 +176,7 @@ public class CounterTwitchGame : MonoBehaviour
         lastUserIdVIPGranted = nextPotentialVIP;
         PlayerPrefs.SetString(lastUserIdVIPGrantedKey, lastUserIdVIPGranted);
     }
-
-    private void DisplayShameMessage(string displayName)
-    {
-        usernameTMP.SetText($"<color=#00EAC0>Shame on </color>{displayName}<color=#00EAC0>!</color>");
-    }
-
+    
     private void OnChannelJoined()
     {
         startingCanvas.SetActive(false);
@@ -188,36 +195,13 @@ public class CounterTwitchGame : MonoBehaviour
         currentMaxScoreUsername = username;
         PlayerPrefs.SetString(maxScoreUsernameKey, username);
         PlayerPrefs.SetInt(maxScoreKey, score);
-        UpdateMaxScoreUI();
-    }
-
-    private void UpdateMaxScoreUI()
-    {
-        string scoreText = $"HIGH SCORE: {currentMaxScore}\nby <color=#00EAC0>";
-
-        if (TwitchOAuth.Instance.IsVipEnabled() &&
-            (!string.IsNullOrEmpty(nextPotentialVIP) || !string.IsNullOrEmpty(lastUserIdVIPGranted)))
-        {
-            scoreText += $"<sprite=0>{currentMaxScoreUsername}</color>";
-        }
-        else
-        {
-            scoreText += currentMaxScoreUsername;
-        }
-
-        maxScoreTMP.SetText(scoreText);
-    }
-
-    private void UpdateCurrentScoreUI(string username, string score)
-    {
-        usernameTMP.SetText(username);
-        currentScoreTMP.SetText(score);
+        uiController.UpdateMaxScoreUI(currentMaxScore, currentMaxScoreUsername, CheckDisplayVip());
     }
 
     private void ResetGame()
     {
         lastUsername = "";
         currentScore = 0;
-        currentScoreTMP.SetText(currentScore.ToString());
+        uiController.UpdateCurrentScoreUI(currentScore);
     }
 }

@@ -7,11 +7,11 @@ using System.Net.Http.Headers;
 using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
-using TwitchChat;
+using VerySimpleTwitchChat;
 using UnityEngine;
 using UnityEngine.Networking;
 
-namespace TwitchAPI
+namespace VerySimpleTwitchAPI
 {
     public class TwitchOAuth : MonoBehaviour
     {
@@ -82,7 +82,7 @@ namespace TwitchAPI
         {
             if (!oauthTokenRetrieved) return;
 
-            TwitchController.Login(channelName, new TwitchLoginInfo(channelName, authToken));
+            TwitchChat.Login(channelName, new TwitchLoginInfo(channelName, authToken));
             UpdateTwitchSettings();
             oauthTokenRetrieved = false;
             InvokeRepeating(nameof(ValidateToken), 3600, 3600);
@@ -298,9 +298,8 @@ namespace TwitchAPI
             string apiUrl = twitchBanUrl +
                             "?broadcaster_id=" + userId +
                             "&moderator_id=" + userId;
-
-            string body =
-                $"{{\"data\": {{\"user_id\":\"{targetUserId}\",\"duration\":{failedNumber * timeoutMultiplier}}}}}";
+            
+            string body =$"{{\"data\": {{\"user_id\":\"{targetUserId}\",\"duration\":{Math.Min(Math.Max(1, failedNumber) * timeoutMultiplier, 12095999)}}}}}";
 
             await CallApi(apiUrl, "POST", body);
         }
@@ -349,7 +348,7 @@ namespace TwitchAPI
             while (retries < 3)
             {
                 Tuple<HttpStatusCode, string> response = await HttpCall(httpRequest);
-
+                
                 switch (response.Item1)
                 {
                     case HttpStatusCode.OK:

@@ -1,23 +1,20 @@
-using System.Runtime.CompilerServices;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class MenuController : MonoBehaviour, IPointerEnterHandler, IPointerClickHandler, IPointerExitHandler
+public class MenuController : DynamicColor, IPointerEnterHandler, IPointerClickHandler, IPointerExitHandler
 {
     [SerializeField] private GameObject panel;
     private TextMeshProUGUI tmp;
-    private Color startColor;
 
     private void Awake()
     {
         TryGetComponent(out tmp);
-        startColor = tmp.color;
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        tmp.color = Color.white;
+        tmp.color = PaletteController.CurrentPalette.GetCustomColor(ColorType.Number).color;
     }
 
     public void OnPointerClick(PointerEventData eventData)
@@ -27,6 +24,11 @@ public class MenuController : MonoBehaviour, IPointerEnterHandler, IPointerClick
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        tmp.color = startColor;
+        tmp.color = PaletteController.CurrentPalette.GetCustomColor(ColorType.Eclipse).color;
+    }
+
+    protected override void UpdateColor()
+    {
+        tmp.color = PaletteController.CurrentPalette.GetCustomColor(ColorType.Eclipse).color;
     }
 }
