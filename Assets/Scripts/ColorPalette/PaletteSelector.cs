@@ -9,7 +9,6 @@ public class PaletteSelector : MonoBehaviour
     [SerializeField] private GameObject copyToCustom;
     private Button customButton;
     private List<PaletteButton> palettes = new List<PaletteButton>();
-    [SerializeField] private GameObject colorSelectorMenu;
 
     private void Start()
     {
@@ -24,7 +23,6 @@ public class PaletteSelector : MonoBehaviour
 
     public void OnEnable()
     {
-        LoadCustomPalette();
         PaletteController.OnPaletteUpdated += OnPaletteChanged;
     }
 
@@ -55,25 +53,14 @@ public class PaletteSelector : MonoBehaviour
             JsonUtility.ToJson(PaletteController.GetPalettes()[PaletteController.customPaletteName]));
     }
 
-    public void LoadCustomPalette()
-    {
-        string customPaletteJson = Application.persistentDataPath + "/customPalette.json";
-
-        if (File.Exists(customPaletteJson))
-        {
-            string json = File.ReadAllText(customPaletteJson);
-            JsonUtility.FromJsonOverwrite(json, PaletteController.GetPalettes()[PaletteController.customPaletteName]);
-        }
-    }
-
-    public void CloseCustomizeMenu()
-    {
-        colorSelectorMenu.SetActive(false);
-    }
-
     public void SetPalette(string paletteName)
     {
         PaletteController.SetCurrentPalette(paletteName);
         palettes.ForEach(x => x.SetButtonState(x.paletteName != paletteName));
+    }
+
+    public void OnApplicationQuit()
+    {
+        PersistCustomPalette();
     }
 }

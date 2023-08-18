@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text;
 using TMPro;
 using UnityEngine;
@@ -10,6 +11,11 @@ public class UIController : MonoBehaviour
 
     StringBuilder scoreText = new StringBuilder();
     StringBuilder shameText = new StringBuilder();
+
+    private void OnEnable()
+    {
+        LoadCustomPalette();
+    }
 
     public void UpdateMaxScoreUI(int currentMaxScore, string currentMaxScoreUsername, bool addVIPLogo)
     {
@@ -37,5 +43,17 @@ public class UIController : MonoBehaviour
             .AppendColorTags(displayName, ColorType.ShameOnUsername)
             .AppendColorTags("!", ColorType.ShameOnMessage);
         usernameTMP.SetText(shameText);
+    }
+    
+    public void LoadCustomPalette()
+    {
+        string customPaletteJson = Application.persistentDataPath + "/customPalette.json";
+
+        if (File.Exists(customPaletteJson))
+        {
+            string json = File.ReadAllText(customPaletteJson);
+            JsonUtility.FromJsonOverwrite(json, PaletteController.GetPalettes()[PaletteController.customPaletteName]);
+            if(PaletteController.CurrentPalette.name.Equals(PaletteController.customPaletteName)) PaletteController.OnPaletteUpdated.Invoke();
+        }
     }
 }

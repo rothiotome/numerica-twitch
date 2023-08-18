@@ -9561,7 +9561,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   prefab: {fileID: 8439440404227074916, guid: 52fced920867509458e595b294d3bf36, type: 3}
   copyToCustom: {fileID: 311649437}
-  colorSelectorMenu: {fileID: 0}
 --- !u!114 &2013906385
 MonoBehaviour:
   m_ObjectHideFlags: 0
